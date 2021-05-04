@@ -2,12 +2,19 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_downloader/flutter_downloader.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:insta_downloader_app/instagramDownload/InstaData.dart';
 import 'package:progressive_image/progressive_image.dart';
 
 import 'DialogBaseState.dart';
+import 'TextView.dart';
+
+List<Color> colorList = [
+  Colors.green,
+  Colors.pink,
+  Colors.deepPurple,
+  Colors.amber,
+  Colors.deepOrange
+];
 
 class PostDownloadDialog extends StatefulWidget {
   final barrierDismissible;
@@ -92,7 +99,7 @@ class _PostDownloadDialogState extends DialogBaseState<PostDownloadDialog> {
 
   @override
   Widget getBuildDialogWidget(BuildContext context) {
-    return Container(
+    /*return Container(
       height: MediaQuery.of(context).size.height * 0.45,
       margin: EdgeInsets.all(8.0),
       padding: EdgeInsets.all(10.0),
@@ -211,6 +218,102 @@ class _PostDownloadDialogState extends DialogBaseState<PostDownloadDialog> {
         },
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 1, childAspectRatio: 1, crossAxisSpacing: 10.0, mainAxisSpacing: 10.0),
+      ),
+    );*/
+
+    return Container(
+      width: MediaQuery.of(context).size.width * 0.8,
+      height: 380,
+      child: Padding(
+        padding: EdgeInsets.all(9),
+        child: Container(
+          child: ListView.builder(
+            itemBuilder: (_, index) {
+              return Container(
+                width: MediaQuery.of(context).size.width * .78,
+                height: 300,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Stack(
+                            children: <Widget>[
+                              Container(
+                                height: 200,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.rectangle,
+                                  color: Theme.of(context).scaffoldBackgroundColor,
+                                ),
+                                child: ProgressiveImage(
+                                  placeholder: AssetImage('assets/images/placeholder_image.png'),
+                                  thumbnail: NetworkImage(widget.instaPost.childPostsCount > 1
+                                      ? widget.instaPost.childposts[index].photoMediumUrl
+                                      : widget.instaPost.photoMediumUrl),
+                                  image: NetworkImage(widget.instaPost.childPostsCount > 1
+                                      ? widget.instaPost.childposts[index].photoLargeUrl
+                                      : widget.instaPost.photoLargeUrl),
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                ),
+                              ),
+                              widget.isVideo[index]
+                                  ? Align(
+                                      alignment: Alignment.center,
+                                      child: Padding(
+                                        padding: EdgeInsets.all(4.0),
+                                        child: Icon(Icons.videocam),
+                                      ),
+                                    )
+                                  : Align(),
+                            ],
+                          ),
+                          IconButton(onPressed: () {}, icon: Icon(Icons.file_download)),
+                          Padding(
+                            padding: EdgeInsets.only(top: 10),
+                            // child: Text(
+                            //   '${widget.instaPost.description.length > 100 ? widget.instaPost.description.replaceRange(100, widget.instaPost.description.length, '') : widget.instaPost.description}...',
+                            //   style: TextStyle(fontSize: 14.0),
+                            // ),
+                            child: TextView(
+                                title: widget.instaPost.description,
+                                fontColor: Colors.black,
+                                maxLine: 2,
+                                fontSize: 14,
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: widget.instaPost.description));
+                            },
+                            icon: Icon(Icons.copy)),
+                        Container(
+                          margin: EdgeInsets.only(right: 5),
+                          child: IconButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              icon: Icon(Icons.close)),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              );
+            },
+            itemCount: widget.instaPost.childPostsCount,
+            scrollDirection: Axis.horizontal,
+          ),
+        ),
       ),
     );
   }

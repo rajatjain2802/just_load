@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:insta_downloader_app/PostDownloadDialog.dart';
+import 'package:insta_downloader_app/CommonColors.dart';
+import 'package:insta_downloader_app/IntentHelper.dart';
+import 'package:insta_downloader_app/appConstant.dart';
 import 'package:insta_downloader_app/instagramDownload/InstaData.dart';
+import 'package:share/share.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import 'appConstant.dart';
+import 'PostDownloadDialog.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -61,64 +65,58 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Scaffold(
       key: _igScaffoldKey,
       body: SingleChildScrollView(
-        physics: BouncingScrollPhysics(),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Container(
               margin: EdgeInsets.only(top: 10),
               child: Padding(
                 padding: EdgeInsets.symmetric(horizontal: 15.0),
-                child: TextField(
-                  keyboardType: TextInputType.text,
-                  controller: _urlController,
-                  maxLines: 1,
-                  textInputAction: TextInputAction.done,
-                  decoration: InputDecoration(
-                      suffixIcon: IconButton(
-                        icon: Icon(Icons.clear),
-                        onPressed: () {
-                          _urlController.text = '';
-                          setState(() {});
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        keyboardType: TextInputType.text,
+                        controller: _urlController,
+                        maxLines: 1,
+                        textInputAction: TextInputAction.done,
+                        decoration: InputDecoration(
+                            enabledBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.green[400])),
+                            border: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.green[400])),
+                            suffixIcon: IconButton(
+                              icon: Icon(Icons.clear),
+                              onPressed: () {
+                                _urlController.text = '';
+                                setState(() {});
+                              },
+                            ),
+                            hintText: 'https://www.instagram.com/...'),
+                        onChanged: (value) {
+                          getButton(value);
                         },
                       ),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(30.0)),
-                      hintText: 'https://www.instagram.com/...'),
-                  onChanged: (value) {
-                    getButton(value);
-                  },
-                ),
-              ),
-            ),
-            SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                MyButton(
-                  text: 'PASTE',
-                  onPressed: () async {
-                    Map<String, dynamic> result =
-                        await SystemChannels.platform.invokeMethod('Clipboard.getData');
-                    result['text'] =
-                        result['text'].toString().replaceAll(RegExp(r'\?igshid=.*'), '');
-                    result['text'] =
-                        result['text'].toString().replaceAll(RegExp(r'https://instagram.com/'), '');
-                    WidgetsBinding.instance.addPostFrameCallback(
-                      (_) => _urlController.text =
-                          result['text'].toString().replaceAll(RegExp(r'\?igshid=.*'), ''),
-                    );
-                    setState(() {
-                      getButton(result['text'].toString());
-                    });
-                  },
-                ),
-                _isDisabled
-                    ? MyButton(
-                        text: 'Download',
-                        onPressed: null,
-                      )
-                    : MyButton(
-                        text: 'Download',
-                        onPressed: () async {
+                    ),
+                    InkWell(
+                      onTap: () async {
+                        Map<String, dynamic> result =
+                            await SystemChannels.platform.invokeMethod('Clipboard.getData');
+                        result['text'] =
+                            result['text'].toString().replaceAll(RegExp(r'\?igshid=.*'), '');
+                        result['text'] = result['text']
+                            .toString()
+                            .replaceAll(RegExp(r'https://instagram.com/'), '');
+                        WidgetsBinding.instance.addPostFrameCallback(
+                          (_) => _urlController.text =
+                              result['text'].toString().replaceAll(RegExp(r'\?igshid=.*'), ''),
+                        );
+                        setState(() {
+                          getButton(result['text'].toString());
+                        });
+                        Fluttertoast.showToast(msg: "Loading...");
+
+                        if (!_isDisabled) {
                           //Check Internet Connection
                           var connectivityResult = await Connectivity().checkConnectivity();
                           if (connectivityResult == ConnectivityResult.none) {
@@ -126,17 +124,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 .showSnackBar(mySnackBar(context, 'No Internet'));
                             return;
                           }
-
-                          // _igScaffoldKey.currentState
-                          //     .showSnackBar(mySnackBar(context, 'Fetching Download links...'));
-                          Fluttertoast.showToast(
-                              msg: "Fetching Download links...",
-                              toastLength: Toast.LENGTH_SHORT,
-                              gravity: ToastGravity.BOTTOM,
-                              timeInSecForIosWeb: 1,
-                              backgroundColor: Colors.red,
-                              textColor: Colors.white,
-                              fontSize: 16.0);
+                          Fluttertoast.showToast(msg: "Fetching Download links...");
 
                           setState(() {
                             _notfirst = true;
@@ -149,7 +137,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               _urlController.text.contains('/reel/')) {
                             _instaProfile = await InstaData.postFromUrl('${_urlController.text}');
 
-                            print("HELLLL");
                             if (_instaProfile == null) {
                               _igScaffoldKey.currentState
                                   .showSnackBar(mySnackBar(context, 'Invalid Url'));
@@ -200,266 +187,85 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 }
                               });
                             }
-                          } else {
-                            // STORY
-                            _instaProfile = await InstaData.storyFromUrl('${_urlController.text}');
-                            if (_instaProfile == null) {
-                              _igScaffoldKey.currentState
-                                  .showSnackBar(mySnackBar(context, 'Invalid Url'));
-                              setState(() {
-                                _notfirst = false;
-                              });
-                            } else {
-                              if (_instaProfile.isPrivate == true) {
-                                setState(() {
-                                  _isPost = true;
-                                  _isPrivate = true;
-                                });
-                                _instaPost.childPostsCount = 1;
-                                _instaPost.videoUrl = 'null';
-                                _instaPost.photoSmallUrl = _instaProfile.profilePicUrl;
-                                _instaPost.photoMediumUrl = _instaProfile.profilePicUrl;
-                                _instaPost.photoLargeUrl = _instaProfile.profilePicUrlHd;
-                                _instaPost.description = _instaProfile.bio;
-                              } else {
-                                setState(() {
-                                  _isPost = false;
-                                  _isPrivate = false;
-                                  if (_instaProfile.storyCount > 0) {
-                                    _isVideo.clear();
-                                    for (var item in _instaProfile.storyData) {
-                                      if (item.storyThumbnail == item.downloadUrl) {
-                                        _isVideo.add(false);
-                                      } else {
-                                        _isVideo.add(true);
-                                      }
-                                    }
-                                  }
-                                });
-                              }
-
-                              setState(() {
-                                _showData = true;
-                              });
-                            }
                           }
-                        },
-                      ),
-              ],
+                        }
+                      },
+                      child: Container(
+                          margin: EdgeInsets.only(left: 10),
+                          decoration: BoxDecoration(color: CommonColors.themeColor),
+                          padding: EdgeInsets.only(left: 12, right: 12, top: 15, bottom: 15),
+                          child: Text(
+                            "Paste".toUpperCase(),
+                            style: TextStyle(color: Colors.white),
+                          )),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            SizedBox(
-              height: 10,
-            ),
-            _isPrivate
-                ? Text(
-                    'This Account is Private',
-                    style: TextStyle(fontSize: 14.0),
-                  )
-                : Container(),
-            /*_notfirst
-                ? _showData
-                    ? _isPost
-                        ? Container(
-                            padding: EdgeInsets.only(bottom: 30.0),
-                            margin: EdgeInsets.all(8.0),
-                            child: SizedBox(
-                              height: screenHeightSize(350, context),
-                              child: GridView.builder(
-                                itemCount: _instaPost.childPostsCount,
-                                scrollDirection: Axis.horizontal,
-                                itemBuilder: (context, index) {
-                                  return Column(
-                                    children: <Widget>[
-                                      Stack(
-                                        children: <Widget>[
-                                          Container(
-                                            height: screenHeightSize(200, context),
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.rectangle,
-                                              color: Theme.of(context).scaffoldBackgroundColor,
-                                            ),
-                                            child: ProgressiveImage(
-                                              placeholder:
-                                                  AssetImage('assets/images/placeholder_image.png'),
-                                              thumbnail: NetworkImage(_instaPost.childPostsCount > 1
-                                                  ? _instaPost.childposts[index].photoMediumUrl
-                                                  : _instaPost.photoMediumUrl),
-                                              image: NetworkImage(_instaPost.childPostsCount > 1
-                                                  ? _instaPost.childposts[index].photoLargeUrl
-                                                  : _instaPost.photoLargeUrl),
-                                              width: double.infinity,
-                                              height: double.infinity,
-                                              fit: BoxFit.fitHeight,
-                                            ),
-                                          ),
-                                          _isVideo[index]
-                                              ? Align(
-                                                  alignment: Alignment.center,
-                                                  child: Padding(
-                                                    padding: EdgeInsets.all(4.0),
-                                                    child: Icon(Icons.videocam),
-                                                  ),
-                                                )
-                                              : Align(),
-                                        ],
-                                      ),
-                                      Padding(
-                                        padding: EdgeInsets.only(top: 10.0, left: 5.0),
-                                        child: GestureDetector(
-                                          child: Text(
-                                            '${_instaPost.description.length > 100 ? _instaPost.description.replaceRange(100, _instaPost.description.length, '') : _instaPost.description}...',
-                                            style: TextStyle(fontSize: 14.0),
-                                          ),
-                                          onTap: () async {
-                                            Clipboard.setData(
-                                                ClipboardData(text: _instaPost.description));
-                                            _igScaffoldKey.currentState.showSnackBar(
-                                                mySnackBar(context, 'Caption Copied'));
-                                          },
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: EdgeInsets.only(top: 10.0),
-                                        child: MyButton(
-                                          text: 'Download',
-                                          padding: EdgeInsets.all(5.0),
-                                          color: Theme.of(context).accentColor,
-                                          onPressed: () async {
-                                            _igScaffoldKey.currentState.showSnackBar(
-                                                mySnackBar(context, 'Added to Download'));
-                                            String downloadUrl = _instaPost.childPostsCount == 1
-                                                ? _instaPost.videoUrl.length > 4
-                                                    ? _instaPost.videoUrl
-                                                    : _instaPost.photoLargeUrl
-                                                : _instaPost.childposts[index].videoUrl.length > 4
-                                                    ? _instaPost.childposts[index].videoUrl
-                                                    : _instaPost.childposts[index].photoLargeUrl;
-                                            String name =
-                                                'IG-${DateTime.now().year}${DateTime.now().month}${DateTime.now().day}${DateTime.now().hour}${DateTime.now().minute}${DateTime.now().second}${DateTime.now().millisecond}.${downloadUrl.toString().contains('jpg') ? 'jpg' : 'mp4'}';
-                                            String thumbUrl = _instaPost.childPostsCount > 1
-                                                ? _instaPost.childposts[index].photoLargeUrl
-                                                : _instaPost.photoLargeUrl;
-                                            await FlutterDownloader.enqueue(
-                                              url: thumbUrl,
-                                              savedDir: thumbDir.path,
-                                              fileName: name.substring(0, name.length - 3) + 'jpg',
-                                              showNotification: false,
-                                            );
-                                            await FlutterDownloader.enqueue(
-                                              url: downloadUrl,
-                                              savedDir: dir.path,
-                                              fileName: name,
-                                              showNotification: true,
-                                              openFileFromNotification: true,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
-                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 1,
-                                  mainAxisSpacing: 5.0,
-                                  crossAxisSpacing: 10.0,
-                                  childAspectRatio: 1,
-                                ),
-                              ),
+            Container(
+              margin: EdgeInsets.only(top: 8),
+              child: Row(
+                // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        Share.share(
+                            'https://play.google.com/store/apps/details?id=com.mrgeekypankaj.justload');
+                      },
+                      child: Container(
+                          margin: EdgeInsets.only(left: 10),
+                          decoration: BoxDecoration(color: CommonColors.themeColor),
+                          padding: EdgeInsets.only(left: 12, right: 12, top: 15, bottom: 15),
+                          child: Text(
+                            "SHARE APP".toUpperCase(),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white),
+                          )),
+                    ),
+                  ),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () async {
+                        String url = "https://play.google.com/store/apps/details?id=com"
+                            ".mrgeekypankaj.justload";
+                        if (await canLaunch(url)) {
+                          await launch(url);
+                        } else {}
+                      },
+                      child: Container(
+                          margin: EdgeInsets.only(left: 5),
+                          decoration: BoxDecoration(color: CommonColors.themeColor),
+                          padding: EdgeInsets.only(left: 12, right: 12, top: 15, bottom: 15),
+                          child: Text(
+                            "RATE US!".toUpperCase(),
+                            style: TextStyle(color: Colors.white),
+                            textAlign: TextAlign.center,
+                          )),
+                    ),
+                  ),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        howToUseIntent(context);
+                      },
+                      child: Container(
+                          margin: EdgeInsets.only(left: 5, right: 8),
+                          decoration: BoxDecoration(color: CommonColors.themeColor),
+                          padding: EdgeInsets.only(left: 12, right: 12, top: 15, bottom: 15),
+                          child: Text(
+                            "HOW TO USE".toUpperCase(),
+                            style: TextStyle(
+                              color: Colors.white,
                             ),
-                          )
-                        : Container(
-                            padding: EdgeInsets.only(bottom: 30.0),
-                            margin: EdgeInsets.all(8.0),
-                            child: SizedBox(
-                              height: screenHeightSize(280, context),
-                              child: GridView.builder(
-                                itemCount: _instaProfile.storyCount,
-                                itemBuilder: (context, index) {
-                                  return Column(
-                                    children: <Widget>[
-                                      Stack(
-                                        children: <Widget>[
-                                          Container(
-                                            height: screenWidthSize(165, context),
-                                            width: screenWidthSize(125, context),
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.rectangle,
-                                              color: Theme.of(context).scaffoldBackgroundColor,
-                                            ),
-                                            child: ProgressiveImage(
-                                              placeholder:
-                                                  AssetImage('assets/images/placeholder_video.gif'),
-                                              thumbnail: NetworkImage(
-                                                  _instaProfile.storyData[index].storyThumbnail),
-                                              image: NetworkImage(
-                                                  _instaProfile.storyData[index].storyThumbnail),
-                                              width: double.infinity,
-                                              height: double.infinity,
-                                              fit: BoxFit.cover,
-                                            ),
-                                          ),
-                                          _isVideo[index]
-                                              ? Align(
-                                                  alignment: Alignment.center,
-                                                  child: Padding(
-                                                    padding: EdgeInsets.all(4.0),
-                                                    child: Icon(Icons.videocam),
-                                                  ),
-                                                )
-                                              : Align(),
-                                        ],
-                                      ),
-                                      Padding(
-                                        padding: EdgeInsets.only(top: 10.0),
-                                        child: MyButton(
-                                          text: 'Download',
-                                          padding: EdgeInsets.all(5.0),
-                                          color: Theme.of(context).accentColor,
-                                          onPressed: () async {
-                                            String downloadUrl =
-                                                _instaProfile.storyData[index].downloadUrl;
-                                            String name =
-                                                'IG-${DateTime.now().year}${DateTime.now().month}${DateTime.now().day}${DateTime.now().hour}${DateTime.now().minute}${DateTime.now().second}${DateTime.now().millisecond}.${downloadUrl.toString().contains('jpg') ? 'jpg' : 'mp4'}';
-                                            String thumbUrl =
-                                                _instaProfile.storyData[index].storyThumbnail;
-                                            _isVideo[index] == true
-                                                ? await FlutterDownloader.enqueue(
-                                                    url: thumbUrl,
-                                                    savedDir: thumbDir.path,
-                                                    fileName:
-                                                        name.substring(0, name.length - 3) + 'jpg',
-                                                    showNotification: false,
-                                                  )
-                                                : print('');
-                                            await FlutterDownloader.enqueue(
-                                              url: downloadUrl,
-                                              savedDir: dir.path,
-                                              fileName: name,
-                                              showNotification: true,
-                                              openFileFromNotification: true,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
-                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 3,
-                                  mainAxisSpacing: 5.0,
-                                  crossAxisSpacing: 10.0,
-                                  childAspectRatio: 0.5,
-                                ),
-                              ),
-                            ),
-                          )
-                    : Container(
-                        height: 100,
-                        child: Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                : Container(),*/
+                            textAlign: TextAlign.center,
+                          )),
+                    ),
+                  ),
+                ],
+              ),
+            )
           ],
         ),
       ),

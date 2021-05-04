@@ -77,4 +77,5 @@ class CommonColors {
   static const Color dealer_success_manager_color = const Color(0x7D0b5595);
   static const Color dealer_acquisition_manager_color = const Color(0xFF8FD2A5);
   static const Color c = const Color(0xFFF5FFFA);
+  static const Color themeColor = const Color(0xFFb30954);
 }

@@ -19,6 +19,7 @@ AppBar toolBar({
 }) {
   return AppBar(
     titleSpacing: 0,
+    brightness: Brightness.light,
     title: isImageTitle
         ? Image.asset(
             imagePath,
@@ -26,16 +27,24 @@ AppBar toolBar({
             height: imageHeight,
             fit: fit,
           )
-        : Text(
-            toolBarTitle,
-            style: TextStyle(
-              color: toolBarTitleColor,
+        : Container(
+            margin: EdgeInsets.only(left: 10),
+            child: Text(
+              toolBarTitle,
+              style: TextStyle(
+                color: toolBarTitleColor,
+              ),
             ),
           ),
     iconTheme: IconThemeData(color: CommonColors.toolbarIconColorDark),
-    leading: null,
+    leading: IconButton(
+        icon: Icon(
+          toolBarIcon,
+          color: toolBarIconColor,
+        ),
+        onPressed: onClick),
     elevation: elevation,
-    backgroundColor: Colors.pink,
+    backgroundColor: CommonColors.themeColor,
     actions: actions,
   );
 }
@@ -127,7 +136,7 @@ AppBar toolBarWithoutIcon(
     iconTheme: IconThemeData(color: CommonColors.toolbarIconColorDark),
     elevation: elevation,
     automaticallyImplyLeading: false,
-    backgroundColor: toolBarBgColor,
+    backgroundColor: CommonColors.themeColor,
     actions: actions,
   );
 }

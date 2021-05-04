@@ -32,7 +32,7 @@ abstract class BaseState<T extends StatefulWidget> extends State<T>
       child: SafeArea(
         child: Scaffold(
           resizeToAvoidBottomInset: false,
-          resizeToAvoidBottomPadding: false,
+          // resizeToAvoidBottomPadding: false,
           key: scaffoldKey,
           appBar: getToolBar(context),
           floatingActionButton: getFloatingButton(context),

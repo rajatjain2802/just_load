@@ -73,7 +73,7 @@ class MainTabScreenState extends BaseState<MainTabScreen> with SingleTickerProvi
           child: TabBar(
               controller: _tabController,
               indicatorWeight: 3,
-              indicatorColor: CommonColors.btnEnableBg,
+              indicatorColor: CommonColors.themeColor,
               unselectedLabelColor: CommonColors.txtColorGray,
               labelColor: CommonColors.txtColorDark,
               tabs: [
@@ -98,7 +98,10 @@ class MainTabScreenState extends BaseState<MainTabScreen> with SingleTickerProvi
 
   @override
   AppBar getToolBar(BuildContext context) {
-    return toolBar(toolBarTitle: 'JustLoad', elevation: 0, onClick: () {}, actions: []);
+    return toolBarWithoutIcon(
+      toolBarTitle: 'JustLoad',
+      elevation: 0,
+    );
   }
 
   @override

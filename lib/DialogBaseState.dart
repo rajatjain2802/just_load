@@ -22,7 +22,7 @@ abstract class DialogBaseState<T extends StatefulWidget> extends State<T> {
           child: Scaffold(
             backgroundColor: getBgColorOfDialog(),
             resizeToAvoidBottomInset: false,
-            resizeToAvoidBottomPadding: false,
+            // resizeToAvoidBottomPadding: false,
             key: scaffoldKey,
             body: Dialog(
               child: SingleChildScrollView(
